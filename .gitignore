@@ -1,0 +1,6 @@
+*.test
+*.out
+.idea/
+.vscode/
+.claude/
+.junie/

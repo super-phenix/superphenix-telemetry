@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+
+    - name: Vet
+      run: go vet ./...
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -race -v ./...
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Helm lint
+        run: helm lint charts/superphenix-telemetry
+
+      - name: Helm template
+        run: helm template charts/superphenix-telemetry
