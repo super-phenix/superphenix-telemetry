@@ -1,0 +1,7 @@
+apiVersion: v2
+name: superphenix-telemetry
+description: A Helm chart to deploy the Superphenix Telemetry ingest server
+
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,138 @@
+# -- Number of replicas. Because the rate limiter and IP-salt are
+# in-memory per pod, scaling beyond 1 replica means each pod tracks its
+# own salt and quota state independently - a client that gets throttled
+# on one pod can still be served by another. Keep at 1 unless you have a
+# sticky-session ingress.
+replicaCount: 1
+
+image:
+  # -- Container image repository.
+  repository: ghcr.io/super-phenix/superphenix-telemetry
+  # -- Image pull policy.
+  pullPolicy: IfNotPresent
+  # -- Image tag. Defaults to the chart appVersion when empty.
+  tag: ""
+
+# -- Image pull secrets for private registries.
+imagePullSecrets: []
+
+# -- Override the chart name used in resource names.
+nameOverride: ""
+# -- Override the fully qualified resource name.
+fullnameOverride: ""
+
+config:
+  # -- Address and port the HTTP server binds to.
+  listenAddr: ":8080"
+  # -- Log level: debug, info, warn, error.
+  logLevel: "info"
+  # -- Maximum requests permitted from a single client identifier within
+  # rateLimit.window before the server returns 429.
+  rateLimit:
+    max: 10
+    window: "1h"
+  # -- Honour the X-Forwarded-For header when extracting the client IP.
+  # Enable this only when the pod sits behind a reverse proxy you
+  # control; otherwise any client can spoof the header to evade rate
+  # limiting.
+  trustForwardedFor: false
+  # -- Per-request timeouts on the HTTP server.
+  timeouts:
+    readHeader: "5s"
+    write: "10s"
+    idle: "60s"
+    shutdown: "10s"
+
+service:
+  # -- Kubernetes Service type.
+  type: ClusterIP
+  # -- Service port that fronts the container's HTTP port.
+  port: 8080
+
+ingress:
+  # -- Enable the Ingress resource. The chart does not assume an
+  # IngressClass; set ingress.className to match your environment.
+  enabled: false
+  # -- Ingress class name.
+  className: ""
+  # -- Annotations applied to the Ingress.
+  annotations: {}
+  # -- Host rules for the Ingress.
+  hosts:
+    - host: telemetry.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- TLS configuration for the Ingress.
+  tls: []
+
+serviceMonitor:
+  # -- Create a Prometheus Operator ServiceMonitor for /metrics. Requires
+  # the monitoring.coreos.com CRDs to be installed in the cluster.
+  enabled: false
+  # -- Scrape interval applied by the ServiceMonitor.
+  interval: "30s"
+  # -- Labels added to the ServiceMonitor so Prometheus can select it.
+  labels: {}
+
+serviceAccount:
+  # -- Create a dedicated ServiceAccount for the pod.
+  create: true
+  # -- Mount the ServiceAccount token into the pod.
+  automount: false
+  # -- Annotations applied to the ServiceAccount.
+  annotations: {}
+  # -- ServiceAccount name. Generated from the chart fullname if empty.
+  name: ""
+
+# -- Annotations applied to the Pod.
+podAnnotations: {}
+# -- Labels applied to the Pod.
+podLabels: {}
+
+# -- Pod-level securityContext applied to the entire Pod.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container-level securityContext. Defaults follow the restricted
+# Pod Security Standard.
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# -- Resource requests and limits for the container.
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  # -- Enable a HorizontalPodAutoscaler for the deployment.
+  enabled: false
+  # -- Minimum replica count when autoscaling is enabled.
+  minReplicas: 1
+  # -- Maximum replica count when autoscaling is enabled.
+  maxReplicas: 10
+  # -- Target average CPU utilisation percentage.
+  targetCPUUtilizationPercentage: 80
+
+# -- Node selector for pod placement.
+nodeSelector: {}
+
+# -- Tolerations for pod placement.
+tolerations: []
+
+# -- Affinity rules for pod placement.
+affinity: {}

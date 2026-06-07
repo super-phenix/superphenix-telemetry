@@ -1,0 +1,224 @@
+package telemetry
+
+import (
+	"math"
+	"strings"
+	"testing"
+)
+
+func validReport() Report {
+	return Report{
+		SchemaVersion: SchemaVersion,
+		Metrics: []Metric{
+			{Name: MetricAZCount, Kind: KindGauge, Value: 7},
+		},
+	}
+}
+
+func TestValidateAcceptsCleanReport(t *testing.T) {
+	r := validReport()
+	if err := r.Validate(); err != nil {
+		t.Fatalf("clean report rejected: %v", err)
+	}
+}
+
+func TestValidateRejectsWrongSchemaVersion(t *testing.T) {
+	r := validReport()
+	r.SchemaVersion = 999
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected schema_version mismatch to be rejected")
+	}
+}
+
+func TestValidateRejectsEmptyMetrics(t *testing.T) {
+	r := validReport()
+	r.Metrics = nil
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected empty metrics to be rejected")
+	}
+}
+
+func TestValidateRejectsTooManyMetrics(t *testing.T) {
+	r := validReport()
+	r.Metrics = make([]Metric, MaxMetricsPerReport+1)
+	for i := range r.Metrics {
+		r.Metrics[i] = Metric{Name: MetricAZCount, Kind: KindGauge, Value: 1}
+	}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected too-many-metrics to be rejected")
+	}
+}
+
+func TestValidateRejectsBadName(t *testing.T) {
+	bad := []string{
+		"",                        // empty
+		"Capital",                 // uppercase
+		"1starts_with_digit",      // leading digit
+		"has space",               // space
+		"has-dash",                // dash
+		strings.Repeat("a", 65),   // too long
+		"x" + string([]byte{'/'}), // slash
+	}
+	for _, n := range bad {
+		r := validReport()
+		r.Metrics[0].Name = n
+		if err := r.Validate(); err == nil {
+			t.Fatalf("expected name %q to be rejected", n)
+		}
+	}
+}
+
+func TestValidateRejectsUnknownMetric(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = "unknown_metric"
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected unknown metric name to be rejected")
+	}
+}
+
+func TestValidateRejectsWrongKindForMetric(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricAZCount
+	r.Metrics[0].Kind = KindCounter // AZCount is a gauge
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected wrong kind for metric to be rejected")
+	}
+}
+
+func TestValidateRejectsMissingRequiredLabels(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricOperatorInfo
+	r.Metrics[0].Labels = nil // missing "version"
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected missing required labels to be rejected")
+	}
+}
+
+func TestValidateRejectsExtraLabels(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricAZCount
+	r.Metrics[0].Labels = map[string]string{"extra": "value"}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected extra labels to be rejected")
+	}
+}
+
+func TestValidateRejectsInvalidLabelValues(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels map[string]string
+	}{
+		{MetricAZInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1"}},
+		{MetricAZInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1"}},
+	}
+	for _, tt := range tests {
+		r := validReport()
+		r.Metrics[0].Name = tt.name
+		r.Metrics[0].Labels = tt.labels
+		if err := r.Validate(); err == nil {
+			t.Errorf("expected invalid label values for %s to be rejected: %v", tt.name, tt.labels)
+		}
+	}
+}
+
+func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
+	r := Report{
+		SchemaVersion: SchemaVersion,
+		Metrics: []Metric{
+			{
+				Name:  MetricAZInfo,
+				Kind:  KindGauge,
+				Value: 1,
+				Labels: map[string]string{
+					"topology": "hyperconverged",
+					"type":     "storage",
+					"version":  "v1.2.3",
+				},
+			},
+			{
+				Name:  MetricComponentInfo,
+				Kind:  KindGauge,
+				Value: 1,
+				Labels: map[string]string{
+					"name":    "scheduler",
+					"version": "v1.2.3",
+				},
+			},
+			{
+				Name:   MetricNodesPerAZ,
+				Kind:   KindGauge,
+				Value:  10,
+				Labels: map[string]string{"az": "az1"},
+			},
+		},
+	}
+	if err := r.Validate(); err != nil {
+		t.Fatalf("valid complex report rejected: %v", err)
+	}
+}
+
+func TestValidateRejectsNonFiniteValue(t *testing.T) {
+	for _, v := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		r := validReport()
+		r.Metrics[0].Value = v
+		if err := r.Validate(); err == nil {
+			t.Fatalf("expected value %v to be rejected", v)
+		}
+	}
+}
+
+func TestValidateRejectsNegativeCounter(t *testing.T) {
+	t.Skip("no allowed counters defined currently")
+}
+
+func TestValidateAllowsNegativeGauge(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Kind = KindGauge
+	r.Metrics[0].Value = -1
+	if err := r.Validate(); err != nil {
+		t.Fatalf("gauges should allow negative values: %v", err)
+	}
+}
+
+func TestValidateRejectsTooManyLabels(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricAZInfo
+	r.Metrics[0].Labels = map[string]string{
+		"topology": "hyperconverged",
+		"type":     "storage",
+		"version":  "v1",
+	}
+	for i := 0; i < MaxLabelsPerMetric; i++ {
+		r.Metrics[0].Labels["extra"+string(rune('a'+i))] = "v"
+	}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected too-many-labels to be rejected")
+	}
+}
+
+func TestValidateRejectsBadLabelKey(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricNodesPerAZ
+	r.Metrics[0].Labels = map[string]string{"BAD-Key": "az1"}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected bad label key to be rejected")
+	}
+}
+
+func TestValidateRejectsBadLabelValue(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricNodesPerAZ
+	r.Metrics[0].Labels = map[string]string{"az": "has space"}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected bad label value to be rejected")
+	}
+}
+
+func TestValidateRejectsOversizedLabelValue(t *testing.T) {
+	r := validReport()
+	r.Metrics[0].Name = MetricNodesPerAZ
+	r.Metrics[0].Labels = map[string]string{"az": strings.Repeat("a", MaxLabelValueLen+1)}
+	if err := r.Validate(); err == nil {
+		t.Fatal("expected oversized label value to be rejected")
+	}
+}
