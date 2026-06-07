@@ -20,6 +20,7 @@ helm install superphenix-telemetry oci://ghcr.io/super-phenix/helm-charts/superp
 | autoscaling.maxReplicas | int | `10` | Maximum replica count when autoscaling is enabled. |
 | autoscaling.minReplicas | int | `1` | Minimum replica count when autoscaling is enabled. |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target average CPU utilisation percentage. |
+| config.anonymizerSalt | string | `"superphenix-telemetry-salt-v1"` | IP-hash salt used for anonymisation. This should be kept consistent across all replicas and restarts to ensure stable client identification. |
 | config.listenAddr | string | `":8080"` | Address and port the HTTP server binds to. |
 | config.logLevel | string | `"info"` | Log level: debug, info, warn, error. |
 | config.rateLimit | object | `{"max":10,"window":"1h"}` | Maximum requests permitted from a single client identifier within rateLimit.window before the server returns 429. |

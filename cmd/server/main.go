@@ -28,6 +28,7 @@ type config struct {
 	writeTimeout      time.Duration
 	idleTimeout       time.Duration
 	shutdownTimeout   time.Duration
+	anonSalt          string
 }
 
 func loadConfig() config {
@@ -41,6 +42,7 @@ func loadConfig() config {
 		writeTimeout:      envDuration("WRITE_TIMEOUT", 10*time.Second),
 		idleTimeout:       envDuration("IDLE_TIMEOUT", 60*time.Second),
 		shutdownTimeout:   envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
+		anonSalt:          env("ANONYMIZER_SALT", "superphenix-telemetry-salt-v1"),
 	}
 }
 
@@ -55,7 +57,7 @@ func main() {
 }
 
 func run(cfg config, log *slog.Logger) error {
-	anon, err := anonymizer.New()
+	anon, err := anonymizer.New(cfg.anonSalt)
 	if err != nil {
 		return err
 	}

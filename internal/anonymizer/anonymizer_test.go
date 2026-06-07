@@ -6,16 +6,17 @@ import (
 )
 
 func TestNewProducesStaticSalt(t *testing.T) {
-	a, err := New()
+	salt := "test-salt"
+	a, err := New(salt)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	b, err := New()
+	b, err := New(salt)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
 	if a.Hash("1.2.3.4") != b.Hash("1.2.3.4") {
-		t.Fatal("two independently created anonymizers produced different hashes for the same input - salt must be static")
+		t.Fatal("two independently created anonymizers with the same salt produced different hashes")
 	}
 }
 
@@ -79,7 +80,7 @@ func TestHashEmptyInput(t *testing.T) {
 
 func mustAnonymizer(t *testing.T) *Anonymizer {
 	t.Helper()
-	a, err := New()
+	a, err := New("static-test-salt")
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

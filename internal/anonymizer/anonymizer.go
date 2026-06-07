@@ -22,12 +22,9 @@ type Anonymizer struct {
 	salt []byte
 }
 
-// New returns an Anonymizer seeded with a static salt.
-func New() (*Anonymizer, error) {
-	// Use a fixed static salt to ensure consistent hashing across instances.
-	// This replaces the previous random per-process salt.
-	staticSalt := []byte("superphenix-telemetry-salt-v1")
-	h := sha256.Sum256(staticSalt)
+// New returns an Anonymizer seeded with the provided salt.
+func New(salt string) (*Anonymizer, error) {
+	h := sha256.Sum256([]byte(salt))
 	return &Anonymizer{salt: h[:]}, nil
 }
 

@@ -26,6 +26,9 @@ config:
   listenAddr: ":8080"
   # -- Log level: debug, info, warn, error.
   logLevel: "info"
+  # -- IP-hash salt used for anonymisation. This should be kept consistent
+  # across all replicas and restarts to ensure stable client identification.
+  anonymizerSalt: "superphenix-telemetry-salt-v1"
   # -- Maximum requests permitted from a single client identifier within
   # rateLimit.window before the server returns 429.
   rateLimit:
