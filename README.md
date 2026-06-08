@@ -58,7 +58,7 @@ metrics and labels are allowed.
   "schema_version": 1,
   "metrics": [
     {
-      "name": "controller_info",
+      "name": "operator_info",
       "kind": "gauge",
       "value": 1,
       "labels": { "version": "1.2.3" }
@@ -79,17 +79,17 @@ metrics and labels are allowed.
 
 Constraints:
 
-| Field          | Rule                                                                       |
-|----------------|----------------------------------------------------------------------------|
-| schema_version | must equal `1`                                                             |
-| metrics        | 1–50 entries                                                               |
-| name           | `controller_info`, `az_info`, `component_info`, `az_count`, `nodes_per_az` |
-| kind           | `counter` or `gauge`                                                       |
-| value          | finite float; counters must be ≥ 0                                         |
-| labels         | 0–8 entries                                                                |
-| label key      | `^[a-z][a-z0-9_]{0,31}$`                                                   |
-| label value    | `^[A-Za-z0-9._-]{1,64}$`                                                   |
-| body           | ≤ 64 KiB                                                                   |
+| Field          | Rule                                                                     |
+|----------------|--------------------------------------------------------------------------|
+| schema_version | must equal `1`                                                           |
+| metrics        | 1–50 entries                                                             |
+| name           | `operator_info`, `az_info`, `component_info`, `az_count`, `nodes_per_az` |
+| kind           | `counter` or `gauge`                                                     |
+| value          | finite float; counters must be ≥ 0                                       |
+| labels         | 0–8 entries                                                              |
+| label key      | `^[a-z][a-z0-9_]{0,31}$`                                                 |
+| label value    | `^[A-Za-z0-9._-]{1,64}$`                                                 |
+| body           | ≤ 64 KiB                                                                 |
 
 Successful submissions return `204 No Content`. Validation failures
 return `400 Bad Request` with a short, payload-free explanation.
@@ -102,7 +102,7 @@ preserving anonymity.
 
 The submitted metrics appear in the scrape output prefixed with
 `superphenix_telemetry_` - e.g. the example above produces
-`superphenix_telemetry_controller_info{version="1.2.3", hashed_ip="..."} 1`.
+`superphenix_telemetry_operator_info{version="1.2.3", hashed_ip="..."} 1`.
 
 ## Endpoints
 

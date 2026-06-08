@@ -40,8 +40,8 @@ var (
 )
 
 const (
-	MetricOperatorInfo  = "operator_info"
-	MetricAZInfo        = "az_info"
+	MetricControllerInfo = "operator_info"
+	MetricAZInfo         = "az_info"
 	MetricComponentInfo = "component_info"
 	MetricAZCount       = "az_count"
 	MetricNodesPerAZ    = "nodes_per_az"
@@ -52,11 +52,11 @@ var (
 		kind   string
 		labels map[string]bool
 	}{
-		MetricOperatorInfo:  {KindGauge, map[string]bool{"version": true}},
-		MetricAZInfo:        {KindGauge, map[string]bool{"topology": true, "type": true, "version": true}},
-		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true}},
-		MetricAZCount:       {KindGauge, nil},
-		MetricNodesPerAZ:    {KindGauge, map[string]bool{"az": true}},
+		MetricControllerInfo: {KindGauge, map[string]bool{"version": true}},
+		MetricAZInfo:         {KindGauge, map[string]bool{"topology": true, "type": true, "version": true}},
+		MetricComponentInfo:  {KindGauge, map[string]bool{"name": true, "version": true}},
+		MetricAZCount:        {KindGauge, nil},
+		MetricNodesPerAZ:     {KindGauge, map[string]bool{"az": true}},
 	}
 
 	allowedTopologies = map[string]bool{"hyperconverged": true, "decoupled": true}
