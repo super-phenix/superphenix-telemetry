@@ -252,6 +252,26 @@ func TestValidateAcceptsNewMetrics(t *testing.T) {
 	}
 }
 
+func TestValidateAcceptsComponentInfoWithoutCluster(t *testing.T) {
+	r := Report{
+		SchemaVersion: SchemaVersion,
+		Metrics: []Metric{
+			{
+				Name:  MetricComponentInfo,
+				Kind:  KindGauge,
+				Value: 1,
+				Labels: map[string]string{
+					"name":    "scheduler",
+					"version": "v1.2.3",
+				},
+			},
+		},
+	}
+	if err := r.Validate(); err != nil {
+		t.Fatalf("component_info should allow optional cluster label: %v", err)
+	}
+}
+
 func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 	tests := []struct {
 		name   string

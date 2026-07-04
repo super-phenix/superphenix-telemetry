@@ -56,7 +56,7 @@ var (
 	}{
 		MetricOperatorInfo:  {KindGauge, map[string]bool{"version": true}},
 		MetricClusterInfo:   {KindGauge, map[string]bool{"topology": true, "type": true, "version": true, "cluster": true}},
-		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true, "cluster": true}},
+		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true, "cluster": false}},
 		MetricRegionCount:   {KindGauge, nil},
 		MetricAZCount:       {KindGauge, map[string]bool{"region": true}},
 		MetricNodeCount:     {KindGauge, map[string]bool{"az": true}},
@@ -139,9 +139,11 @@ func (m *Metric) validate() error {
 	}
 
 	// Ensure all required labels are present.
-	for l := range spec.labels {
-		if _, ok := m.Labels[l]; !ok {
-			return fmt.Errorf("labels: missing required label %q", l)
+	for l, required := range spec.labels {
+		if required {
+			if _, ok := m.Labels[l]; !ok {
+				return fmt.Errorf("labels: missing required label %q", l)
+			}
 		}
 	}
 
@@ -160,7 +162,7 @@ func (m *Metric) validate() error {
 		}
 
 		// Ensure no extra labels are provided.
-		if !spec.labels[k] {
+		if _, allowed := spec.labels[k]; !allowed {
 			return fmt.Errorf("labels: %q is not allowed for this metric", k)
 		}
 
