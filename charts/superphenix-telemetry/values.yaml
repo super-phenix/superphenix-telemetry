@@ -1,8 +1,4 @@
-# -- Number of replicas. Because the rate limiter and IP-salt are
-# in-memory per pod, scaling beyond 1 replica means each pod tracks its
-# own salt and quota state independently - a client that gets throttled
-# on one pod can still be served by another. Keep at 1 unless you have a
-# sticky-session ingress.
+# -- Number of replicas to run.
 replicaCount: 1
 
 image:
@@ -62,9 +58,9 @@ ingress:
   annotations: {}
   # -- Host rules for the Ingress.
   hosts:
-    - host: telemetry.example.com
+    - host: telemetry.superphenix.net
       paths:
-        - path: /
+        - path: /v1/telemetry
           pathType: Prefix
   # -- TLS configuration for the Ingress.
   tls: []
@@ -80,7 +76,7 @@ serviceMonitor:
 
 serviceAccount:
   # -- Create a dedicated ServiceAccount for the pod.
-  create: true
+  create: false
   # -- Mount the ServiceAccount token into the pod.
   automount: false
   # -- Annotations applied to the ServiceAccount.
