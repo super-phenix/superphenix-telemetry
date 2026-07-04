@@ -323,4 +323,31 @@ func TestHandlerLogsRejections(t *testing.T) {
 			t.Errorf("expected log to contain invalid json, got: %s", buf.String())
 		}
 	})
+
+	t.Run("validation_failure_with_name", func(t *testing.T) {
+		buf.Reset()
+		body := mustJSON(t, Report{
+			SchemaVersion: SchemaVersion,
+			Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "bad"}}},
+		})
+		doPost(h, body)
+		if !strings.Contains(buf.String(), "az_count") {
+			t.Errorf("expected log to contain az_count, got: %s", buf.String())
+		}
+	})
+
+	t.Run("recorder_failure", func(t *testing.T) {
+		buf.Reset()
+		rec := &fakeRecorder{failOn: MetricAZCount, failErr: errors.New("boom")}
+		h3 := NewHandler(HandlerConfig{
+			Recorder: rec,
+			Limiter:  &fakeLimiter{allow: true},
+			ClientID: func(*http.Request) string { return "c" },
+			Logger:   logger,
+		})
+		doPost(h3, mustJSON(t, validReport()))
+		if !strings.Contains(buf.String(), "record metric") || !strings.Contains(buf.String(), "name=az_count") {
+			t.Errorf("expected log to contain record metric and name=az_count, got: %s", buf.String())
+		}
+	})
 }

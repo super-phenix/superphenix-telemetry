@@ -111,7 +111,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 				m.Labels["hashed_ip"] = token
 			}
 			if err := cfg.Recorder.Record(r.Context(), m); err != nil {
-				cfg.Logger.Error("record metric", slog.String("err", err.Error()))
+				cfg.Logger.Error("record metric", slog.String("name", m.Name), slog.String("err", err.Error()))
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}

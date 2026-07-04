@@ -105,7 +105,10 @@ func (r *Report) Validate() error {
 
 	for i := range r.Metrics {
 		if err := r.Metrics[i].validate(); err != nil {
-			return fmt.Errorf("metrics[%s/%s/%d]: %w", r.Metrics[i].Kind, r.Metrics[i].Name, i, err)
+			if _, ok := allowedMetrics[r.Metrics[i].Name]; ok {
+				return fmt.Errorf("metrics[%d](%s) %w", i, r.Metrics[i].Name, err)
+			}
+			return fmt.Errorf("metrics[%d].%w", i, err)
 		}
 	}
 
@@ -163,7 +166,7 @@ func (m *Metric) validate() error {
 
 		// Ensure no extra labels are provided.
 		if _, allowed := spec.labels[k]; !allowed {
-			return fmt.Errorf("labels: %q is not allowed for this metric", k)
+			return errors.New("labels: not an allowed label")
 		}
 
 		// Validate specific label values if applicable.
