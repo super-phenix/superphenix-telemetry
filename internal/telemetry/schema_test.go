@@ -150,7 +150,7 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 				Name:   MetricNodeCount,
 				Kind:   KindGauge,
 				Value:  10,
-				Labels: map[string]string{"az": "1"},
+				Labels: map[string]string{"az": "1", "cluster": "1"},
 			},
 		},
 	}
@@ -231,7 +231,7 @@ func TestValidateAcceptsNewMetrics(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricNodeCount, map[string]string{"az": "1"}},
+		{MetricNodeCount, map[string]string{"az": "1", "cluster": "1"}},
 		{MetricRegionCount, nil},
 	}
 	for _, tt := range tests {
@@ -278,7 +278,7 @@ func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 		labels map[string]string
 	}{
 		{MetricAZCount, map[string]string{"region": "us-east-1"}},
-		{MetricNodeCount, map[string]string{"az": "us-east-1a"}},
+		{MetricNodeCount, map[string]string{"az": "us-east-1a", "cluster": "1"}},
 		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a"}},
 	}
 	for _, tt := range tests {

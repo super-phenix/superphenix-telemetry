@@ -59,7 +59,7 @@ var (
 		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true, "cluster": false}},
 		MetricRegionCount:   {KindGauge, nil},
 		MetricAZCount:       {KindGauge, map[string]bool{"region": true}},
-		MetricNodeCount:     {KindGauge, map[string]bool{"az": true}},
+		MetricNodeCount:     {KindGauge, map[string]bool{"az": true, "cluster": true}},
 	}
 
 	allowedTopologies = map[string]bool{"hyperconverged": true, "decoupled": true}

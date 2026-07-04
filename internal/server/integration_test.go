@@ -43,7 +43,7 @@ func TestEndToEnd(t *testing.T) {
 	// Submit a report with new metrics.
 	body := `{"schema_version":1,"metrics":[
 		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"1"}},
-		{"name":"node_count","kind":"gauge","value":5,"labels":{"az":"2"}},
+		{"name":"node_count","kind":"gauge","value":5,"labels":{"az":"2","cluster":"1"}},
 		{"name":"region_count","kind":"gauge","value":2},
 		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"3"}}
 	]}`
