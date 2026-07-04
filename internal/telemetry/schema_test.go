@@ -143,6 +143,7 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 				Labels: map[string]string{
 					"name":    "scheduler",
 					"version": "v1.2.3",
+					"cluster": "1",
 				},
 			},
 			{
@@ -201,7 +202,7 @@ func TestValidateRejectsTooManyLabels(t *testing.T) {
 func TestValidateRejectsBadLabelKey(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "BAD-Key": "v"}
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "BAD-Key": "v"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label key to be rejected")
 	}
@@ -210,7 +211,7 @@ func TestValidateRejectsBadLabelKey(t *testing.T) {
 func TestValidateRejectsBadLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "az": "has space"}
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "az": "has space"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label value to be rejected")
 	}
@@ -219,7 +220,7 @@ func TestValidateRejectsBadLabelValue(t *testing.T) {
 func TestValidateRejectsOversizedLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "az": strings.Repeat("a", MaxLabelValueLen+1)}
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "az": strings.Repeat("a", MaxLabelValueLen+1)}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected oversized label value to be rejected")
 	}
