@@ -105,7 +105,7 @@ func (r *Report) Validate() error {
 
 	for i := range r.Metrics {
 		if err := r.Metrics[i].validate(); err != nil {
-			return fmt.Errorf("metrics[%d]: %w", i, err)
+			return fmt.Errorf("metrics[%s/%s/%d]: %w", r.Metrics[i].Kind, r.Metrics[i].Name, i, err)
 		}
 	}
 
