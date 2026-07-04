@@ -99,7 +99,11 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			if m.Labels == nil {
 				m.Labels = make(map[string]string)
 			}
-			m.Labels["hashed_ip"] = token
+			if len(token) > 16 {
+				m.Labels["hashed_ip"] = token[:16]
+			} else {
+				m.Labels["hashed_ip"] = token
+			}
 			if err := cfg.Recorder.Record(r.Context(), m); err != nil {
 				cfg.Logger.Error("record metric", slog.String("err", err.Error()))
 				http.Error(w, "internal error", http.StatusInternalServerError)

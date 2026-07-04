@@ -37,14 +37,16 @@ var (
 	metricNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 	labelKeyRe   = regexp.MustCompile(`^[a-z][a-z0-9_]{0,31}$`)
 	labelValRe   = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
+	anonIDRe     = regexp.MustCompile(`^[0-9]+$`)
 )
 
 const (
 	MetricOperatorInfo  = "operator_info"
-	MetricAZInfo        = "az_info"
+	MetricClusterInfo   = "cluster_info"
 	MetricComponentInfo = "component_info"
+	MetricRegionCount   = "region_count"
 	MetricAZCount       = "az_count"
-	MetricNodesPerAZ    = "nodes_per_az"
+	MetricNodeCount     = "node_count"
 )
 
 var (
@@ -53,10 +55,11 @@ var (
 		labels map[string]bool
 	}{
 		MetricOperatorInfo:  {KindGauge, map[string]bool{"version": true}},
-		MetricAZInfo:        {KindGauge, map[string]bool{"topology": true, "type": true, "version": true}},
+		MetricClusterInfo:   {KindGauge, map[string]bool{"topology": true, "type": true, "version": true, "cluster": true}},
 		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true}},
-		MetricAZCount:       {KindGauge, nil},
-		MetricNodesPerAZ:    {KindGauge, map[string]bool{"az": true}},
+		MetricRegionCount:   {KindGauge, nil},
+		MetricAZCount:       {KindGauge, map[string]bool{"region": true}},
+		MetricNodeCount:     {KindGauge, map[string]bool{"az": true}},
 	}
 
 	allowedTopologies = map[string]bool{"hyperconverged": true, "decoupled": true}
@@ -150,13 +153,19 @@ func (m *Metric) validate() error {
 			return errors.New("labels: invalid value format")
 		}
 
+		if k == "region" || k == "az" || k == "cluster" {
+			if !anonIDRe.MatchString(v) {
+				return fmt.Errorf("labels: %s must be an anonymized identifier (numeric)", k)
+			}
+		}
+
 		// Ensure no extra labels are provided.
 		if !spec.labels[k] {
 			return fmt.Errorf("labels: %q is not allowed for this metric", k)
 		}
 
 		// Validate specific label values if applicable.
-		if m.Name == MetricAZInfo {
+		if m.Name == MetricClusterInfo {
 			switch k {
 			case "topology":
 				if !allowedTopologies[v] {

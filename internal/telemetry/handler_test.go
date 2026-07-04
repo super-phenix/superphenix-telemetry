@@ -79,7 +79,7 @@ func TestHandlerAcceptsValidReport(t *testing.T) {
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
 		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 3},
+			{Name: MetricAZCount, Kind: KindGauge, Value: 3, Labels: map[string]string{"region": "1"}},
 			{Name: MetricOperatorInfo, Kind: KindGauge, Value: 1, Labels: map[string]string{"version": "1.0"}},
 		},
 	})
@@ -112,7 +112,7 @@ func TestHandlerThrottles(t *testing.T) {
 
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
-		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1}},
+		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}}},
 	})
 	w := doPost(h, body)
 
@@ -132,7 +132,7 @@ func TestHandlerRetryAfterRoundsUpFromZero(t *testing.T) {
 	h := newHandler(&fakeRecorder{}, &fakeLimiter{allow: false, retry: 100 * time.Millisecond})
 	w := doPost(h, mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
-		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1}},
+		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}}},
 	}))
 	if got := w.Header().Get("Retry-After"); got != "1" {
 		t.Fatalf("Retry-After = %q, want 1", got)
@@ -176,7 +176,7 @@ func TestHandlerRejectsTooLargeBody(t *testing.T) {
 	})
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
-		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1}},
+		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}}},
 	})
 	w := doPost(h, body)
 	if w.Code != http.StatusRequestEntityTooLarge {
@@ -188,7 +188,7 @@ func TestHandlerRejectsTrailingData(t *testing.T) {
 	h := newHandler(&fakeRecorder{}, &fakeLimiter{allow: true})
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
-		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1}},
+		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}}},
 	})
 	body = append(body, []byte(`{"another":"object"}`)...)
 	w := doPost(h, body)
@@ -202,7 +202,7 @@ func TestHandlerReturns500OnRecorderFailure(t *testing.T) {
 	h := newHandler(rec, &fakeLimiter{allow: true})
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
-		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1}},
+		Metrics:       []Metric{{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}}},
 	})
 	w := doPost(h, body)
 	if w.Code != http.StatusInternalServerError {
@@ -221,7 +221,7 @@ func TestHandlerAddsHashedIP(t *testing.T) {
 	body := mustJSON(t, Report{
 		SchemaVersion: SchemaVersion,
 		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 1},
+			{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}},
 		},
 	})
 	w := doPost(h, body)
@@ -235,6 +235,34 @@ func TestHandlerAddsHashedIP(t *testing.T) {
 	}
 	if got := calls[0].Labels["hashed_ip"]; got != "hashed-ip-token" {
 		t.Errorf("hashed_ip label = %q, want %q", got, "hashed-ip-token")
+	}
+}
+
+func TestHandlerTruncatesHashedIP(t *testing.T) {
+	rec := &fakeRecorder{}
+	longToken := "12345678901234567890" // 20 chars
+	h := NewHandler(HandlerConfig{
+		Recorder: rec,
+		Limiter:  &fakeLimiter{allow: true},
+		ClientID: func(*http.Request) string { return longToken },
+	})
+
+	body := mustJSON(t, Report{
+		SchemaVersion: SchemaVersion,
+		Metrics: []Metric{
+			{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "1"}},
+		},
+	})
+	_ = doPost(h, body)
+
+	calls := rec.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("got %d calls, want 1", len(calls))
+	}
+	got := calls[0].Labels["hashed_ip"]
+	want := "1234567890123456"
+	if got != want {
+		t.Errorf("hashed_ip label = %q, want %q", got, want)
 	}
 }
 

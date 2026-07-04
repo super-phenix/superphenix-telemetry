@@ -10,7 +10,7 @@ func validReport() Report {
 	return Report{
 		SchemaVersion: SchemaVersion,
 		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 7},
+			{Name: MetricAZCount, Kind: KindGauge, Value: 7, Labels: map[string]string{"region": "1"}},
 		},
 	}
 }
@@ -108,8 +108,8 @@ func TestValidateRejectsInvalidLabelValues(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricAZInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1"}},
-		{MetricAZInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1"}},
+		{MetricClusterInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1", "cluster": "1"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1", "cluster": "1"}},
 	}
 	for _, tt := range tests {
 		r := validReport()
@@ -126,13 +126,14 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 		SchemaVersion: SchemaVersion,
 		Metrics: []Metric{
 			{
-				Name:  MetricAZInfo,
+				Name:  MetricClusterInfo,
 				Kind:  KindGauge,
 				Value: 1,
 				Labels: map[string]string{
 					"topology": "hyperconverged",
 					"type":     "storage",
 					"version":  "v1.2.3",
+					"cluster":  "1",
 				},
 			},
 			{
@@ -145,10 +146,10 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 				},
 			},
 			{
-				Name:   MetricNodesPerAZ,
+				Name:   MetricNodeCount,
 				Kind:   KindGauge,
 				Value:  10,
-				Labels: map[string]string{"az": "az1"},
+				Labels: map[string]string{"az": "1"},
 			},
 		},
 	}
@@ -182,11 +183,12 @@ func TestValidateAllowsNegativeGauge(t *testing.T) {
 
 func TestValidateRejectsTooManyLabels(t *testing.T) {
 	r := validReport()
-	r.Metrics[0].Name = MetricAZInfo
+	r.Metrics[0].Name = MetricClusterInfo
 	r.Metrics[0].Labels = map[string]string{
 		"topology": "hyperconverged",
 		"type":     "storage",
 		"version":  "v1",
+		"cluster":  "1",
 	}
 	for i := 0; i < MaxLabelsPerMetric; i++ {
 		r.Metrics[0].Labels["extra"+string(rune('a'+i))] = "v"
@@ -198,8 +200,8 @@ func TestValidateRejectsTooManyLabels(t *testing.T) {
 
 func TestValidateRejectsBadLabelKey(t *testing.T) {
 	r := validReport()
-	r.Metrics[0].Name = MetricNodesPerAZ
-	r.Metrics[0].Labels = map[string]string{"BAD-Key": "az1"}
+	r.Metrics[0].Name = MetricComponentInfo
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "BAD-Key": "v"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label key to be rejected")
 	}
@@ -207,8 +209,8 @@ func TestValidateRejectsBadLabelKey(t *testing.T) {
 
 func TestValidateRejectsBadLabelValue(t *testing.T) {
 	r := validReport()
-	r.Metrics[0].Name = MetricNodesPerAZ
-	r.Metrics[0].Labels = map[string]string{"az": "has space"}
+	r.Metrics[0].Name = MetricComponentInfo
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "az": "has space"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label value to be rejected")
 	}
@@ -216,9 +218,54 @@ func TestValidateRejectsBadLabelValue(t *testing.T) {
 
 func TestValidateRejectsOversizedLabelValue(t *testing.T) {
 	r := validReport()
-	r.Metrics[0].Name = MetricNodesPerAZ
-	r.Metrics[0].Labels = map[string]string{"az": strings.Repeat("a", MaxLabelValueLen+1)}
+	r.Metrics[0].Name = MetricComponentInfo
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "az": strings.Repeat("a", MaxLabelValueLen+1)}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected oversized label value to be rejected")
+	}
+}
+
+func TestValidateAcceptsNewMetrics(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels map[string]string
+	}{
+		{MetricNodeCount, map[string]string{"az": "1"}},
+		{MetricRegionCount, nil},
+	}
+	for _, tt := range tests {
+		r := Report{
+			SchemaVersion: SchemaVersion,
+			Metrics: []Metric{
+				{
+					Name:   tt.name,
+					Kind:   KindGauge,
+					Value:  1,
+					Labels: tt.labels,
+				},
+			},
+		}
+		if err := r.Validate(); err != nil {
+			t.Errorf("new metric %s rejected: %v", tt.name, err)
+		}
+	}
+}
+
+func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels map[string]string
+	}{
+		{MetricAZCount, map[string]string{"region": "us-east-1"}},
+		{MetricNodeCount, map[string]string{"az": "us-east-1a"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a"}},
+	}
+	for _, tt := range tests {
+		r := validReport()
+		r.Metrics[0].Name = tt.name
+		r.Metrics[0].Labels = tt.labels
+		if err := r.Validate(); err == nil {
+			t.Errorf("expected non-anonymized label value for %s to be rejected: %v", tt.name, tt.labels)
+		}
 	}
 }
