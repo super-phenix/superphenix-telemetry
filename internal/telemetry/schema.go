@@ -56,7 +56,7 @@ var (
 	}{
 		MetricOperatorInfo:  {KindGauge, map[string]bool{"version": true}},
 		MetricClusterInfo:   {KindGauge, map[string]bool{"topology": true, "type": true, "version": true, "cluster": true}},
-		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true}},
+		MetricComponentInfo: {KindGauge, map[string]bool{"name": true, "version": true, "cluster": true}},
 		MetricRegionCount:   {KindGauge, nil},
 		MetricAZCount:       {KindGauge, map[string]bool{"region": true}},
 		MetricNodeCount:     {KindGauge, map[string]bool{"az": true}},
