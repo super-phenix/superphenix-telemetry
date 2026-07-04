@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -277,4 +278,49 @@ func TestHandlerErrorBodiesAreSafe(t *testing.T) {
 	if strings.Contains(w.Body.String(), "secret-host-name") {
 		t.Fatal("error body leaked client-supplied value back to caller")
 	}
+}
+
+func TestHandlerLogsRejections(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, nil))
+	h := NewHandler(HandlerConfig{
+		Recorder: &fakeRecorder{},
+		Limiter:  &fakeLimiter{allow: true},
+		ClientID: func(*http.Request) string { return "c" },
+		Logger:   logger,
+	})
+
+	t.Run("validation_failure", func(t *testing.T) {
+		buf.Reset()
+		body := mustJSON(t, Report{
+			SchemaVersion: SchemaVersion,
+			Metrics:       []Metric{{Name: "bad", Kind: KindGauge, Value: 1}},
+		})
+		doPost(h, body)
+		if !strings.Contains(buf.String(), "rejection: validation failed") {
+			t.Errorf("expected log to contain rejection reason, got: %s", buf.String())
+		}
+	})
+
+	t.Run("rate_limited", func(t *testing.T) {
+		buf.Reset()
+		h2 := NewHandler(HandlerConfig{
+			Recorder: &fakeRecorder{},
+			Limiter:  &fakeLimiter{allow: false, retry: time.Second},
+			ClientID: func(*http.Request) string { return "c" },
+			Logger:   logger,
+		})
+		doPost(h2, mustJSON(t, validReport()))
+		if !strings.Contains(buf.String(), "rejection: rate limited") {
+			t.Errorf("expected log to contain rate limited, got: %s", buf.String())
+		}
+	})
+
+	t.Run("invalid_json", func(t *testing.T) {
+		buf.Reset()
+		doPost(h, []byte("{not json"))
+		if !strings.Contains(buf.String(), "rejection: invalid json") {
+			t.Errorf("expected log to contain invalid json, got: %s", buf.String())
+		}
+	})
 }

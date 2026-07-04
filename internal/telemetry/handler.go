@@ -51,6 +51,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
+			cfg.Logger.Warn("rejection: method not allowed", slog.String("method", r.Method))
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			return
 		}
@@ -63,6 +64,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 				secs = 1
 			}
 			w.Header().Set("Retry-After", strconv.Itoa(secs))
+			cfg.Logger.Info("rejection: rate limited", slog.String("retry_after", w.Header().Get("Retry-After")+"s"))
 			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
@@ -77,19 +79,23 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		if err := dec.Decode(&report); err != nil {
 			var mbe *http.MaxBytesError
 			if errors.As(err, &mbe) {
+				cfg.Logger.Warn("rejection: body too large", slog.Int64("limit", cfg.MaxBody))
 				http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
 				return
 			}
+			cfg.Logger.Warn("rejection: invalid json", slog.String("err", err.Error()))
 			http.Error(w, "invalid json", http.StatusBadRequest)
 			return
 		}
 		// Reject trailing junk - guarantees one report per request.
 		if dec.More() {
+			cfg.Logger.Warn("rejection: unexpected trailing data")
 			http.Error(w, "unexpected trailing data", http.StatusBadRequest)
 			return
 		}
 
 		if err := report.Validate(); err != nil {
+			cfg.Logger.Warn("rejection: validation failed", slog.String("err", err.Error()))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

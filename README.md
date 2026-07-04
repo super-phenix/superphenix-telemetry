@@ -34,8 +34,13 @@ To protect the privacy of Superphenix users:
   same IP always hashes to the same token, allowing for consistent
   rate-limiting and metric aggregation across restarts and multiple
   server instances while still preserving anonymity.
-- **No client-supplied identifier is accepted.** The wire schema has no
-  `instance_id`, `hostname`, `user`, `cluster` or similar field. The
+- **Infrastructure identifiers must be anonymized.** The wire schema accepts
+  labels like `region`, `az`, and `cluster` to allow for multi-cluster
+  aggregation, but these values MUST be anonymized numeric indices (e.g.
+  "1", "2") by the client. The server rejects any non-numeric values for
+  these labels to prevent accidental leaks of real infrastructure names.
+- **No client-supplied host/user identifier is accepted.** The wire schema
+  has no `instance_id`, `hostname`, `user` or similar field. The
   only per-request identifier the server ever sees is the source IP,
   and that is used solely as a rate-limit key.
 - **Validation errors never echo the client payload.** A 400 response
@@ -64,13 +69,14 @@ metrics and labels are allowed.
       "labels": { "version": "1.2.3" }
     },
     {
-      "name": "az_info",
+      "name": "cluster_info",
       "kind": "gauge",
       "value": 1,
       "labels": {
         "topology": "hyperconverged",
         "type": "storage",
-        "version": "1.2.3"
+        "version": "1.2.3",
+        "cluster": "1"
       }
     }
   ]
@@ -79,17 +85,17 @@ metrics and labels are allowed.
 
 Constraints:
 
-| Field          | Rule                                                                     |
-|----------------|--------------------------------------------------------------------------|
-| schema_version | must equal `1`                                                           |
-| metrics        | 1–50 entries                                                             |
-| name           | `operator_info`, `az_info`, `component_info`, `az_count`, `nodes_per_az` |
-| kind           | `counter` or `gauge`                                                     |
-| value          | finite float; counters must be ≥ 0                                       |
-| labels         | 0–8 entries                                                              |
-| label key      | `^[a-z][a-z0-9_]{0,31}$`                                                 |
-| label value    | `^[A-Za-z0-9._-]{1,64}$`                                                 |
-| body           | ≤ 64 KiB                                                                 |
+| Field          | Rule                                                                                        |
+|----------------|---------------------------------------------------------------------------------------------|
+| schema_version | must equal `1`                                                                              |
+| metrics        | 1–50 entries                                                                                |
+| name           | `operator_info`, `cluster_info`, `component_info`, `region_count`, `az_count`, `node_count` |
+| kind           | `counter` or `gauge`                                                                        |
+| value          | finite float; counters must be ≥ 0                                                          |
+| labels         | 0–8 entries                                                                                 |
+| label key      | `^[a-z][a-z0-9_]{0,31}$`                                                                    |
+| label value    | `^[A-Za-z0-9._-]{1,64}$`                                                                    |
+| body           | ≤ 64 KiB                                                                                    |
 
 Successful submissions return `204 No Content`. Validation failures
 return `400 Bad Request` with a short, payload-free explanation.
