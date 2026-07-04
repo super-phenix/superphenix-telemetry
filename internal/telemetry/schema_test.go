@@ -150,7 +150,7 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 				Name:   MetricNodeCount,
 				Kind:   KindGauge,
 				Value:  10,
-				Labels: map[string]string{"az": "1", "cluster": "1"},
+				Labels: map[string]string{"cluster": "1"},
 			},
 		},
 	}
@@ -211,7 +211,7 @@ func TestValidateRejectsBadLabelKey(t *testing.T) {
 func TestValidateRejectsBadLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "az": "has space"}
+	r.Metrics[0].Labels = map[string]string{"name": "has space", "version": "v", "cluster": "1"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label value to be rejected")
 	}
@@ -220,7 +220,7 @@ func TestValidateRejectsBadLabelValue(t *testing.T) {
 func TestValidateRejectsOversizedLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "az": strings.Repeat("a", MaxLabelValueLen+1)}
+	r.Metrics[0].Labels = map[string]string{"name": strings.Repeat("a", MaxLabelValueLen+1), "version": "v", "cluster": "1"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected oversized label value to be rejected")
 	}
@@ -231,7 +231,7 @@ func TestValidateAcceptsNewMetrics(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricNodeCount, map[string]string{"az": "1", "cluster": "1"}},
+		{MetricNodeCount, map[string]string{"cluster": "1"}},
 		{MetricRegionCount, nil},
 	}
 	for _, tt := range tests {
@@ -278,7 +278,7 @@ func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 		labels map[string]string
 	}{
 		{MetricAZCount, map[string]string{"region": "us-east-1"}},
-		{MetricNodeCount, map[string]string{"az": "us-east-1a", "cluster": "1"}},
+		{MetricNodeCount, map[string]string{"cluster": "cluster-a"}},
 		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a"}},
 	}
 	for _, tt := range tests {
