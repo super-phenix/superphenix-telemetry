@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/super-phenix/superphenix-telemetry/internal/anonymizer"
+	"github.com/super-phenix/superphenix-telemetry/pkg/anonymizer"
 	"github.com/super-phenix/superphenix-telemetry/internal/logging"
 	"github.com/super-phenix/superphenix-telemetry/internal/metrics"
 	"github.com/super-phenix/superphenix-telemetry/internal/ratelimit"

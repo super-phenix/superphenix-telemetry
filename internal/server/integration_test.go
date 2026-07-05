@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/super-phenix/superphenix-telemetry/internal/anonymizer"
+	"github.com/super-phenix/superphenix-telemetry/pkg/anonymizer"
 	"github.com/super-phenix/superphenix-telemetry/internal/metrics"
 	"github.com/super-phenix/superphenix-telemetry/internal/ratelimit"
 )
