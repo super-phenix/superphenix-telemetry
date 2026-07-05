@@ -42,7 +42,7 @@ func TestEndToEnd(t *testing.T) {
 
 	// Submit a report with new metrics.
 	body := `{"schema_version":1,"installation_id":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","metrics":[
-		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"01234567"}},
+		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"01234567", "az":"01234567"}},
 		{"name":"node_count","kind":"gauge","value":5,"labels":{"cluster":"01234567"}},
 		{"name":"region_count","kind":"gauge","value":2},
 		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"01234567","az":"01234567"}}
@@ -128,7 +128,7 @@ func TestEndToEndRateLimited(t *testing.T) {
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
-	body := `{"schema_version":1,"installation_id":"0123456789abcdef","metrics":[{"name":"az_count","kind":"gauge","value":1,"labels":{"region":"01234567"}}]}`
+	body := `{"schema_version":1,"installation_id":"0123456789abcdef","metrics":[{"name":"az_count","kind":"gauge","value":1,"labels":{"region":"01234567", "az":"01234567"}}]}`
 	for i := 0; i < 2; i++ {
 		resp, err := http.Post(srv.URL+"/v1/telemetry", "application/json", strings.NewReader(body))
 		if err != nil {

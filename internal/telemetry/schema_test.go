@@ -11,7 +11,7 @@ func validReport() Report {
 		SchemaVersion:  SchemaVersion,
 		InstallationID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 7, Labels: map[string]string{"region": "01234567"}},
+			{Name: MetricAZCount, Kind: KindGauge, Value: 7, Labels: map[string]string{"region": "01234567", "az": "01234567"}},
 		},
 	}
 }
@@ -43,7 +43,7 @@ func TestValidateRejectsTooManyMetrics(t *testing.T) {
 	r := validReport()
 	r.Metrics = make([]Metric, MaxMetricsPerReport+1)
 	for i := range r.Metrics {
-		r.Metrics[i] = Metric{Name: MetricAZCount, Kind: KindGauge, Value: 1}
+		r.Metrics[i] = Metric{Name: MetricRegionCount, Kind: KindGauge, Value: 1}
 	}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected too-many-metrics to be rejected")
@@ -98,7 +98,7 @@ func TestValidateRejectsMissingRequiredLabels(t *testing.T) {
 func TestValidateRejectsExtraLabels(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricAZCount
-	r.Metrics[0].Labels = map[string]string{"extra": "value"}
+	r.Metrics[0].Labels = map[string]string{"region": "01234567", "az": "01234567", "extra": "value"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected extra labels to be rejected")
 	}
@@ -282,7 +282,8 @@ func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricAZCount, map[string]string{"region": "us-east-1"}},
+		{MetricAZCount, map[string]string{"region": "us-east-1", "az": "01234567"}},
+		{MetricAZCount, map[string]string{"region": "01234567", "az": "us-east-1a"}},
 		{MetricNodeCount, map[string]string{"cluster": "cluster-a"}},
 		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a", "az": "0123456789abcdef"}},
 		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "0123456789abcdef", "az": "us-east-1a"}},
