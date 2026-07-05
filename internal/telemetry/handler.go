@@ -105,6 +105,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 			if m.Labels == nil {
 				m.Labels = make(map[string]string)
 			}
+			m.Labels["installation_id"] = report.InstallationID
 			if len(token) > 16 {
 				m.Labels["hashed_ip"] = token[:16]
 			} else {

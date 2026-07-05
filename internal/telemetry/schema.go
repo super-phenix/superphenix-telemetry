@@ -37,7 +37,7 @@ var (
 	metricNameRe = regexp.MustCompile(`^[a-z][a-z0-9_]{0,63}$`)
 	labelKeyRe   = regexp.MustCompile(`^[a-z][a-z0-9_]{0,31}$`)
 	labelValRe   = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
-	anonIDRe     = regexp.MustCompile(`^[0-9]+$`)
+	anonIDRe     = regexp.MustCompile(`^[a-f0-9]+$`)
 )
 
 const (
@@ -69,12 +69,12 @@ var (
 // Report is the top-level body posted to the ingest endpoint.
 //
 // There is deliberately no field that carries a client-supplied identifier
-// (host name, instance id, user id). The only per-request identifier the
-// server ever sees is the source IP, which is hashed and used only for
-// rate limiting.
+// (host name, user id). The only per-request identifiers the server sees are
+// the source IP (hashed for rate limiting) and the anonymized installation ID.
 type Report struct {
-	SchemaVersion int      `json:"schema_version"`
-	Metrics       []Metric `json:"metrics"`
+	SchemaVersion  int      `json:"schema_version"`
+	InstallationID string   `json:"installation_id"`
+	Metrics        []Metric `json:"metrics"`
 }
 
 // Metric describes a single observation.
@@ -93,6 +93,14 @@ type Metric struct {
 func (r *Report) Validate() error {
 	if r.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("schema_version: unsupported, want %d", SchemaVersion)
+	}
+
+	if r.InstallationID == "" {
+		return errors.New("installation_id: required")
+	}
+
+	if !anonIDRe.MatchString(r.InstallationID) {
+		return errors.New("installation_id: invalid format")
 	}
 
 	if len(r.Metrics) == 0 {
@@ -160,7 +168,7 @@ func (m *Metric) validate() error {
 
 		if k == "region" || k == "az" || k == "cluster" {
 			if !anonIDRe.MatchString(v) {
-				return fmt.Errorf("labels: %s must be an anonymized identifier (numeric)", k)
+				return fmt.Errorf("labels: %s must be an anonymized identifier (hex)", k)
 			}
 		}
 

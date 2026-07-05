@@ -8,9 +8,10 @@ import (
 
 func validReport() Report {
 	return Report{
-		SchemaVersion: SchemaVersion,
+		SchemaVersion:  SchemaVersion,
+		InstallationID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 7, Labels: map[string]string{"region": "1"}},
+			{Name: MetricAZCount, Kind: KindGauge, Value: 7, Labels: map[string]string{"region": "01234567"}},
 		},
 	}
 }
@@ -108,8 +109,8 @@ func TestValidateRejectsInvalidLabelValues(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricClusterInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1", "cluster": "1", "az": "1"}},
-		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1", "cluster": "1", "az": "1"}},
+		{MetricClusterInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1", "cluster": "01234567", "az": "01234567"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1", "cluster": "01234567", "az": "01234567"}},
 	}
 	for _, tt := range tests {
 		r := validReport()
@@ -123,7 +124,8 @@ func TestValidateRejectsInvalidLabelValues(t *testing.T) {
 
 func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 	r := Report{
-		SchemaVersion: SchemaVersion,
+		SchemaVersion:  SchemaVersion,
+		InstallationID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		Metrics: []Metric{
 			{
 				Name:  MetricClusterInfo,
@@ -133,8 +135,8 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 					"topology": "hyperconverged",
 					"type":     "storage",
 					"version":  "v1.2.3",
-					"cluster":  "1",
-					"az":       "1",
+					"cluster":  "0123456789abcdef",
+					"az":       "0123456789abcdef",
 				},
 			},
 			{
@@ -144,14 +146,14 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 				Labels: map[string]string{
 					"name":    "scheduler",
 					"version": "v1.2.3",
-					"cluster": "1",
+					"cluster": "0123456789abcdef",
 				},
 			},
 			{
 				Name:   MetricNodeCount,
 				Kind:   KindGauge,
 				Value:  10,
-				Labels: map[string]string{"cluster": "1"},
+				Labels: map[string]string{"cluster": "0123456789abcdef"},
 			},
 		},
 	}
@@ -190,7 +192,7 @@ func TestValidateRejectsTooManyLabels(t *testing.T) {
 		"topology": "hyperconverged",
 		"type":     "storage",
 		"version":  "v1",
-		"cluster":  "1",
+		"cluster":  "0123456789abcdef",
 	}
 	for i := 0; i < MaxLabelsPerMetric; i++ {
 		r.Metrics[0].Labels["extra"+string(rune('a'+i))] = "v"
@@ -203,7 +205,7 @@ func TestValidateRejectsTooManyLabels(t *testing.T) {
 func TestValidateRejectsBadLabelKey(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "1", "BAD-Key": "v"}
+	r.Metrics[0].Labels = map[string]string{"name": "n", "version": "v", "cluster": "0123456789abcdef", "BAD-Key": "v"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label key to be rejected")
 	}
@@ -212,7 +214,7 @@ func TestValidateRejectsBadLabelKey(t *testing.T) {
 func TestValidateRejectsBadLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": "has space", "version": "v", "cluster": "1"}
+	r.Metrics[0].Labels = map[string]string{"name": "has space", "version": "v", "cluster": "0123456789abcdef"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected bad label value to be rejected")
 	}
@@ -221,7 +223,7 @@ func TestValidateRejectsBadLabelValue(t *testing.T) {
 func TestValidateRejectsOversizedLabelValue(t *testing.T) {
 	r := validReport()
 	r.Metrics[0].Name = MetricComponentInfo
-	r.Metrics[0].Labels = map[string]string{"name": strings.Repeat("a", MaxLabelValueLen+1), "version": "v", "cluster": "1"}
+	r.Metrics[0].Labels = map[string]string{"name": strings.Repeat("a", MaxLabelValueLen+1), "version": "v", "cluster": "0123456789abcdef"}
 	if err := r.Validate(); err == nil {
 		t.Fatal("expected oversized label value to be rejected")
 	}
@@ -232,12 +234,13 @@ func TestValidateAcceptsNewMetrics(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricNodeCount, map[string]string{"cluster": "1"}},
+		{MetricNodeCount, map[string]string{"cluster": "0123456789abcdef"}},
 		{MetricRegionCount, nil},
 	}
 	for _, tt := range tests {
 		r := Report{
-			SchemaVersion: SchemaVersion,
+			SchemaVersion:  SchemaVersion,
+			InstallationID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			Metrics: []Metric{
 				{
 					Name:   tt.name,
@@ -255,7 +258,8 @@ func TestValidateAcceptsNewMetrics(t *testing.T) {
 
 func TestValidateAcceptsComponentInfoWithoutCluster(t *testing.T) {
 	r := Report{
-		SchemaVersion: SchemaVersion,
+		SchemaVersion:  SchemaVersion,
+		InstallationID: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		Metrics: []Metric{
 			{
 				Name:  MetricComponentInfo,
@@ -280,8 +284,8 @@ func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 	}{
 		{MetricAZCount, map[string]string{"region": "us-east-1"}},
 		{MetricNodeCount, map[string]string{"cluster": "cluster-a"}},
-		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a", "az": "1"}},
-		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "1", "az": "us-east-1a"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a", "az": "0123456789abcdef"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "0123456789abcdef", "az": "us-east-1a"}},
 	}
 	for _, tt := range tests {
 		r := validReport()

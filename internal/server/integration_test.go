@@ -41,11 +41,11 @@ func TestEndToEnd(t *testing.T) {
 	defer srv.Close()
 
 	// Submit a report with new metrics.
-	body := `{"schema_version":1,"metrics":[
-		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"1"}},
-		{"name":"node_count","kind":"gauge","value":5,"labels":{"cluster":"1"}},
+	body := `{"schema_version":1,"installation_id":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","metrics":[
+		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"01234567"}},
+		{"name":"node_count","kind":"gauge","value":5,"labels":{"cluster":"01234567"}},
 		{"name":"region_count","kind":"gauge","value":2},
-		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"3","az":"2"}}
+		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"01234567","az":"01234567"}}
 	]}`
 	resp, err := http.Post(srv.URL+"/v1/telemetry", "application/json", bytes.NewBufferString(body))
 	if err != nil {
@@ -75,8 +75,8 @@ func TestEndToEnd(t *testing.T) {
 		{"superphenix_telemetry_region_count", "2"},
 		{"superphenix_telemetry_cluster_info", "1"},
 	} {
-		if !strings.Contains(mbs, m.name) || !strings.Contains(mbs, `hashed_ip="`) {
-			t.Fatalf("expected metric %s with hashed_ip in scrape, got:\n%s", m.name, mbs)
+		if !strings.Contains(mbs, m.name) || !strings.Contains(mbs, `hashed_ip="`) || !strings.Contains(mbs, `installation_id="`) {
+			t.Fatalf("expected metric %s with hashed_ip and installation_id in scrape, got:\n%s", m.name, mbs)
 		}
 		if !strings.Contains(mbs, `} `+m.value) {
 			t.Fatalf("expected value %s for %s in scrape, got:\n%s", m.value, m.name, mbs)
@@ -128,7 +128,7 @@ func TestEndToEndRateLimited(t *testing.T) {
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
-	body := `{"schema_version":1,"metrics":[{"name":"az_count","kind":"gauge","value":1,"labels":{"region":"1"}}]}`
+	body := `{"schema_version":1,"installation_id":"0123456789abcdef","metrics":[{"name":"az_count","kind":"gauge","value":1,"labels":{"region":"01234567"}}]}`
 	for i := 0; i < 2; i++ {
 		resp, err := http.Post(srv.URL+"/v1/telemetry", "application/json", strings.NewReader(body))
 		if err != nil {
