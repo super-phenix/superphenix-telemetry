@@ -75,29 +75,12 @@ func TestEndToEnd(t *testing.T) {
 		{"superphenix_telemetry_region_count", "2"},
 		{"superphenix_telemetry_cluster_info", "1"},
 	} {
-		if !strings.Contains(mbs, m.name) || !strings.Contains(mbs, `hashed_ip="`) || !strings.Contains(mbs, `installation_id="`) {
-			t.Fatalf("expected metric %s with hashed_ip and installation_id in scrape, got:\n%s", m.name, mbs)
+		if !strings.Contains(mbs, m.name) || !strings.Contains(mbs, `installation_id="`) {
+			t.Fatalf("expected metric %s with installation_id in scrape, got:\n%s", m.name, mbs)
 		}
 		if !strings.Contains(mbs, `} `+m.value) {
 			t.Fatalf("expected value %s for %s in scrape, got:\n%s", m.value, m.name, mbs)
 		}
-	}
-
-	// Verify hashed_ip length is 16.
-	// We look for the first occurrence and extract the value.
-	const needle = `hashed_ip="`
-	idx := strings.Index(mbs, needle)
-	if idx == -1 {
-		t.Fatal("hashed_ip not found in metrics")
-	}
-	val := mbs[idx+len(needle):]
-	end := strings.IndexByte(val, '"')
-	if end == -1 {
-		t.Fatal("malformed metrics output")
-	}
-	hashedIP := val[:end]
-	if len(hashedIP) != 16 {
-		t.Fatalf("hashed_ip length = %d, want 16 (value: %s)", len(hashedIP), hashedIP)
 	}
 
 	// Healthz and readyz must respond.

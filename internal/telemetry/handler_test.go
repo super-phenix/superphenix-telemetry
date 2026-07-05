@@ -217,64 +217,6 @@ func TestHandlerReturns500OnRecorderFailure(t *testing.T) {
 	}
 }
 
-func TestHandlerAddsHashedIP(t *testing.T) {
-	rec := &fakeRecorder{}
-	h := NewHandler(HandlerConfig{
-		Recorder: rec,
-		Limiter:  &fakeLimiter{allow: true},
-		ClientID: func(*http.Request) string { return "hashed-ip-token" },
-	})
-
-	body := mustJSON(t, Report{
-		SchemaVersion:  SchemaVersion,
-		InstallationID: "0123456789abcdef",
-		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "01234567", "az": "01234567"}},
-		},
-	})
-	w := doPost(h, body)
-
-	if w.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want 204", w.Code)
-	}
-	calls := rec.Calls()
-	if len(calls) != 1 {
-		t.Fatalf("got %d calls, want 1", len(calls))
-	}
-	if got := calls[0].Labels["hashed_ip"]; got != "hashed-ip-token" {
-		t.Errorf("hashed_ip label = %q, want %q", got, "hashed-ip-token")
-	}
-}
-
-func TestHandlerTruncatesHashedIP(t *testing.T) {
-	rec := &fakeRecorder{}
-	longToken := "12345678901234567890" // 20 chars
-	h := NewHandler(HandlerConfig{
-		Recorder: rec,
-		Limiter:  &fakeLimiter{allow: true},
-		ClientID: func(*http.Request) string { return longToken },
-	})
-
-	body := mustJSON(t, Report{
-		SchemaVersion:  SchemaVersion,
-		InstallationID: "0123456789abcdef",
-		Metrics: []Metric{
-			{Name: MetricAZCount, Kind: KindGauge, Value: 1, Labels: map[string]string{"region": "01234567", "az": "01234567"}},
-		},
-	})
-	_ = doPost(h, body)
-
-	calls := rec.Calls()
-	if len(calls) != 1 {
-		t.Fatalf("got %d calls, want 1", len(calls))
-	}
-	got := calls[0].Labels["hashed_ip"]
-	want := "1234567890123456"
-	if got != want {
-		t.Errorf("hashed_ip label = %q, want %q", got, want)
-	}
-}
-
 func TestHandlerErrorBodiesAreSafe(t *testing.T) {
 	// Make sure we don't reflect anything from the request body in error
 	// responses - that would defeat anonymisation.

@@ -105,13 +105,13 @@ return `400 Bad Request` with a short, payload-free explanation.
 Over-quota clients receive `429 Too Many Requests` with a `Retry-After`
 header in seconds.
 
-The server automatically adds `hashed_ip` and `installation_id` labels to
+The server automatically adds `installation_id` labels to
 every ingested metric to ensure uniqueness across different client clusters
 while preserving anonymity.
 
 The submitted metrics appear in the scrape output prefixed with
 `superphenix_telemetry_` - e.g. the example above produces
-`superphenix_telemetry_operator_info{version="1.2.3", hashed_ip="...", installation_id="..."} 1`.
+`superphenix_telemetry_operator_info{version="1.2.3", installation_id="..."} 1`.
 
 ## Endpoints
 

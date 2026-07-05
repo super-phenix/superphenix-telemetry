@@ -69,8 +69,8 @@ var (
 // Report is the top-level body posted to the ingest endpoint.
 //
 // There is deliberately no field that carries a client-supplied identifier
-// (host name, user id). The only per-request identifiers the server sees are
-// the source IP (hashed for rate limiting) and the anonymized installation ID.
+// (host name, user id). The only per-request identifier the server sees is the
+// anonymized installation ID. The source IP is hashed for rate limiting only.
 type Report struct {
 	SchemaVersion  int      `json:"schema_version"`
 	InstallationID string   `json:"installation_id"`
