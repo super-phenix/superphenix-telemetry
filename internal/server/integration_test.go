@@ -45,7 +45,7 @@ func TestEndToEnd(t *testing.T) {
 		{"name":"az_count","kind":"gauge","value":3,"labels":{"region":"1"}},
 		{"name":"node_count","kind":"gauge","value":5,"labels":{"cluster":"1"}},
 		{"name":"region_count","kind":"gauge","value":2},
-		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"3"}}
+		{"name":"cluster_info","kind":"gauge","value":1,"labels":{"topology":"hyperconverged","type":"storage","version":"v1.2.3","cluster":"3","az":"2"}}
 	]}`
 	resp, err := http.Post(srv.URL+"/v1/telemetry", "application/json", bytes.NewBufferString(body))
 	if err != nil {

@@ -76,7 +76,8 @@ metrics and labels are allowed.
         "topology": "hyperconverged",
         "type": "storage",
         "version": "1.2.3",
-        "cluster": "1"
+        "cluster": "1",
+        "az": "1"
       }
     }
   ]

@@ -108,8 +108,8 @@ func TestValidateRejectsInvalidLabelValues(t *testing.T) {
 		name   string
 		labels map[string]string
 	}{
-		{MetricClusterInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1", "cluster": "1"}},
-		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1", "cluster": "1"}},
+		{MetricClusterInfo, map[string]string{"topology": "bad", "type": "storage", "version": "v1", "cluster": "1", "az": "1"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "bad", "version": "v1", "cluster": "1", "az": "1"}},
 	}
 	for _, tt := range tests {
 		r := validReport()
@@ -134,6 +134,7 @@ func TestValidateAcceptsValidComplexMetrics(t *testing.T) {
 					"type":     "storage",
 					"version":  "v1.2.3",
 					"cluster":  "1",
+					"az":       "1",
 				},
 			},
 			{
@@ -279,7 +280,8 @@ func TestValidateRejectsNonAnonymizedIdentifier(t *testing.T) {
 	}{
 		{MetricAZCount, map[string]string{"region": "us-east-1"}},
 		{MetricNodeCount, map[string]string{"cluster": "cluster-a"}},
-		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "cluster-a", "az": "1"}},
+		{MetricClusterInfo, map[string]string{"topology": "hyperconverged", "type": "storage", "version": "v1", "cluster": "1", "az": "us-east-1a"}},
 	}
 	for _, tt := range tests {
 		r := validReport()
