@@ -63,7 +63,7 @@ var (
 	}
 
 	allowedTopologies = map[string]bool{"hyperconverged": true, "decoupled": true}
-	allowedTypes      = map[string]bool{"storage": true, "virtualization": true, "none": true}
+	allowedTypes      = map[string]bool{"storage": true, "workload": true, "none": true}
 )
 
 // Report is the top-level body posted to the ingest endpoint.
